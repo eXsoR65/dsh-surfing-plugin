@@ -2,6 +2,8 @@
 
 [English](README.md) | 中文
 
+此 fork 面向 **DSH `0.2.1-alpha.2`**。
+
 `dsh-surfing-plugin` 为 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 提供自托管网页搜索与抓取：`web_search` 调用 SearXNG，`web_fetch` 调用 Crawl4AI。插件注册到 DSH 的 `ctx.web` Provider 接口，因此工具名称、参数、结果展示、超时与取消仍由 DSH 原生 `web_search` 和 `web_fetch` 实现。
 
 ## 工作方式
@@ -14,14 +16,23 @@ flowchart LR
   E --> F[Crawl4AI /crawl]
 ```
 
-随包发布的 `cordis.patch.yml` 完成三件事：挂载插件、将 DSH 的搜索与抓取 Provider 分别固定为 `surfing-searxng` 和 `surfing-crawl4ai`、增加一个只注册原生 `web_fetch` 的 Consumer 行。这个独立 Consumer 同时适配两种 DSH 组装：headless 继续使用宿主层 `web_search`，Web UI 继续使用各 Agent Preset 内的 `web_search`。已有的 DeepSeek 搜索 Provider 可以继续挂载，但不会被选中。
+随包发布的 `cordis.patch.yml` 挂载插件，并将搜索与抓取 Provider 分别固定为 `surfing-searxng` 和 `surfing-crawl4ai`。原生工具 Consumer 由 DSH 提供：headless 使用宿主层的 `web_search` 与 `web_fetch`，启用网页工具的 Web Agent Preset 使用各自作用域内的 Consumer。未启用网页工具的 Preset 保持不变。已有的 DeepSeek 搜索与 HTTP 抓取 Provider 可以继续挂载，但不会被选中。
 
 ## 要求
 
 - Node.js `^22.19.0` 或 `>=24.0.0`
-- DeepSeek Harness `>=0.1.0-rc.6 <0.2.0`
+- DeepSeek Harness `0.2.1-alpha.2`
+- 提供 `ctx.web` 与原生网页工具的 profile，例如 `web` 或 `headless`；独立的 `sdk-minimal` profile 不提供这些能力
 - 可访问的 SearXNG 与 Crawl4AI 服务
 - SearXNG 必须在 `search.formats` 中启用 `json`；否则 `/search?format=json` 会被拒绝
+
+### 兼容性迁移
+
+此 checkout 明确面向 `0.2.1-alpha.2`；`@deepseek-ai/dsh-web` peer dependency 固定为该版本，因为 DSH 会在安装与启动时检查声明的 peer 范围。此 checkout 不再支持旧版 DSH。
+
+已移除旧的 `surfing-tool-web-fetch` 行：DSH 现在在 headless 与启用网页工具的 Web Preset 中提供原生抓取，额外的宿主 Consumer 会与 headless 注册冲突。搜索与抓取的超时预算和输出上限由原生 Consumer 决定；本 bundle 不再设置 120 秒抓取超时。原生抓取默认超时为 30 秒，输出上限为 200,000 个字符。如果 Crawl4AI 需要更长时间，请在 headless 的宿主层原生 `tool-web` 行或 Web Preset 作用域内的 `tool-web` 行中配置 `fetchTimeoutMs`；Web 的宿主层行处于禁用状态。
+
+集成契约以目标版本的 [web Provider API](https://unpkg.com/@deepseek-ai/dsh-web@0.2.1-alpha.2/lib/types/index.d.ts)、[原生工具配置](https://unpkg.com/@deepseek-ai/dsh-tool-web@0.2.1-alpha.2/lib/types/index.d.ts) 与 [profile 兼容性规则](https://unpkg.com/@deepseek-ai/dsh-app-boot@0.2.1-alpha.2/README.md#profiles) 为准。
 
 ## 快速开始
 
@@ -127,7 +138,7 @@ dsh plugin --profile web remove dsh-surfing-plugin
 Git 安装会从源码运行本包的 `prepare` 构建。建议锁定 commit：
 
 ```sh
-dsh plugin --profile web add github:cyijun/surfing-plugin#COMMIT_SHA
+dsh plugin --profile web add github:eXsoR65/dsh-surfing-plugin#COMMIT_SHA
 ```
 
 pnpm 10 及更高版本需要先授权 Git 依赖的构建脚本。首次安装提示被阻止时，将提示中的确切包键加入该 profile 的 `pnpm-workspace.yaml`：

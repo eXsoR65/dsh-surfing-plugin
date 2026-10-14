@@ -2,6 +2,8 @@
 
 English | [中文](README.zh.md)
 
+This fork targets **DSH `0.2.1-alpha.2`**.
+
 `dsh-surfing-plugin` adds self-hosted web access to [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness): `web_search` uses SearXNG and `web_fetch` uses Crawl4AI. It registers providers with DSH's `ctx.web` service, so the native tool names, arguments, rendering, timeouts, cancellation, and result limits remain unchanged.
 
 ## Architecture
@@ -14,14 +16,23 @@ flowchart LR
   E --> F[Crawl4AI /crawl]
 ```
 
-The bundled `cordis.patch.yml` mounts this plugin, selects `surfing-searxng` and `surfing-crawl4ai`, and adds a fetch-only native tool consumer. The separate consumer works in both DSH assemblies: headless keeps its host-level `web_search`, while the Web UI keeps the `web_search` mounted by each Agent Preset. The built-in DeepSeek search provider may remain mounted but is not selected.
+The bundled `cordis.patch.yml` mounts this plugin and selects `surfing-searxng` and `surfing-crawl4ai`. DSH supplies the native tool consumers: headless uses its host-level `web_search` and `web_fetch`, while Web presets that enable web tools use their scoped consumers. Presets without web tools remain unchanged. The built-in DeepSeek search and HTTP fetch providers may remain mounted but are not selected.
 
 ## Requirements
 
 - Node.js `^22.19.0` or `>=24.0.0`
-- DeepSeek Harness `>=0.1.0-rc.6 <0.2.0`
+- DeepSeek Harness `0.2.1-alpha.2`
+- A profile supplying `ctx.web` and native web tools, such as `web` or `headless`; the standalone `sdk-minimal` profile does not supply them
 - Reachable SearXNG and Crawl4AI services
 - JSON enabled in SearXNG's `search.formats`
+
+### Compatibility migration
+
+This checkout targets `0.2.1-alpha.2` explicitly; the `@deepseek-ai/dsh-web` peer dependency uses that exact version because DSH checks declared peers at installation and startup. Earlier DSH versions are no longer supported by this checkout.
+
+The former `surfing-tool-web-fetch` row is removed: DSH now enables native fetch in headless and tool-enabled Web presets, so an additional host consumer conflicts with headless registrations. Search/fetch budgets and output limits come from those native consumers; the bundle no longer sets a 120-second fetch timeout. Native fetch defaults to a 30-second budget and a 200,000-character output cap. If Crawl4AI needs a longer budget, configure `fetchTimeoutMs` on the host-level native `tool-web` row in headless, or on the preset's scoped `tool-web` row in Web; the Web host-level row is disabled.
+
+The target-version [web provider API](https://unpkg.com/@deepseek-ai/dsh-web@0.2.1-alpha.2/lib/types/index.d.ts), [native tool configuration](https://unpkg.com/@deepseek-ai/dsh-tool-web@0.2.1-alpha.2/lib/types/index.d.ts), and [profile compatibility rules](https://unpkg.com/@deepseek-ai/dsh-app-boot@0.2.1-alpha.2/README.md#profiles) define the integration contract.
 
 ## Quick start
 
@@ -117,7 +128,7 @@ The Crawl4AI provider sends the minimal `{ "urls": [url] }` body to `POST /crawl
 Git installation builds from source through `prepare`. Pin a commit:
 
 ```sh
-dsh plugin --profile web add github:cyijun/surfing-plugin#COMMIT_SHA
+dsh plugin --profile web add github:eXsoR65/dsh-surfing-plugin#COMMIT_SHA
 ```
 
 pnpm 10 and newer require build-script approval for Git dependencies. If the first install is blocked, copy its exact package key into the profile's `pnpm-workspace.yaml` and retry:
