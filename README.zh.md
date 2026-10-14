@@ -2,7 +2,7 @@
 
 [English](README.md) | 中文
 
-此 fork 面向 **DSH `0.2.1-alpha.2`**。
+此 fork 面向 **DSH `0.2.1-alpha.2`**。**尚未发布到 npm，GitHub 也未提供预构建 tarball；安装前需要在本地构建。**
 
 `dsh-surfing-plugin` 为 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 提供自托管网页搜索与抓取：`web_search` 调用 SearXNG，`web_fetch` 调用 Crawl4AI。插件注册到 DSH 的 `ctx.web` Provider 接口，因此工具名称、参数、结果展示、超时与取消仍由 DSH 原生 `web_search` 和 `web_fetch` 实现。
 
@@ -46,19 +46,17 @@ export CRAWL4AI_URL=http://127.0.0.1:11235
 export CRAWL4AI_API_TOKEN=replace-with-your-token
 ```
 
-从本地 checkout 安装到 `web` profile：
+在仓库根目录安装依赖，构建本地包并安装到 `web` profile：
 
 ```sh
-dsh plugin --profile web add .
+corepack pnpm install --frozen-lockfile
+corepack pnpm pack
+dsh plugin --profile web add "$PWD/dsh-surfing-plugin-0.1.0.tgz"
 dsh --profile web --dump-config
 dsh --profile web
 ```
 
-发布到 npm 后安装：
-
-```sh
-dsh plugin --profile web add dsh-surfing-plugin
-```
+`pnpm pack` 会运行包检查与构建，然后生成包含已编译 `lib/` 文件的 `dsh-surfing-plugin-0.1.0.tgz`。tarball 文件名取决于 `package.json` 中的版本。仅使用 npm 包名安装不会安装这个尚未发布的 fork。
 
 卸载：
 

@@ -2,7 +2,7 @@
 
 English | [中文](README.zh.md)
 
-This fork targets **DSH `0.2.1-alpha.2`**.
+This fork targets **DSH `0.2.1-alpha.2`**. **It is not published to npm, and GitHub does not provide a prebuilt tarball. Build it locally before installing.**
 
 `dsh-surfing-plugin` adds self-hosted web access to [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness): `web_search` uses SearXNG and `web_fetch` uses Crawl4AI. It registers providers with DSH's `ctx.web` service, so the native tool names, arguments, rendering, timeouts, cancellation, and result limits remain unchanged.
 
@@ -46,19 +46,17 @@ export CRAWL4AI_URL=http://127.0.0.1:11235
 export CRAWL4AI_API_TOKEN=replace-with-your-token
 ```
 
-Install a local checkout into the `web` profile:
+From the repository root, install dependencies and build a local package for the `web` profile:
 
 ```sh
-dsh plugin --profile web add .
+corepack pnpm install --frozen-lockfile
+corepack pnpm pack
+dsh plugin --profile web add "$PWD/dsh-surfing-plugin-0.1.0.tgz"
 dsh --profile web --dump-config
 dsh --profile web
 ```
 
-After npm publication:
-
-```sh
-dsh plugin --profile web add dsh-surfing-plugin
-```
+`pnpm pack` runs the package checks and build, then creates `dsh-surfing-plugin-0.1.0.tgz` with the compiled `lib/` files. The tarball name follows the version in `package.json`. Installing the bare npm package name does not install this unpublished fork.
 
 Remove it with `dsh plugin --profile web remove dsh-surfing-plugin`.
 
